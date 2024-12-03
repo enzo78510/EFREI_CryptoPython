@@ -13,21 +13,45 @@ def hello_world():
 
 key = Fernet.generate_key()
 f = Fernet(key)
-
-@app.route('/encrypt/<string:valeur>')
-def encryptage(valeur):
-    valeur_bytes = valeur.encode()  # Conversion str -> bytes
-    token = f.encrypt(valeur_bytes)  # Encrypt la valeur
-    return f"Valeur encryptée : {token.decode()}"  # Retourne le token en str
-  
-@app.route('/decrypt/<string:valeur>')
-def decryptage(valeur):
-    try:
-        valeur_bytes = valeur.encode()  # Conversion de la chaîne en bytes
-        decrypted_value = f.decrypt(valeur_bytes)  # Décryptage de la valeur
-        return f"Valeur décryptée : {decrypted_value.decode()}"  # Retourne la valeur déchiffrée
-    except Exception as e:
-        return f"Erreur lors du décryptage : {str(e)}"  # Gestion des erreurs
                                                                                                                                              
+@app.route('/encrypt', methods=['POST'])
+def encrypt():
+    try:
+        data = request.get_json()
+        key = data['key']
+        value = data['value']
+
+        # Vérifie que la clé est valide
+        f = Fernet(key)
+        value_bytes = value.encode()  # Conversion str -> bytes
+        token = f.encrypt(value_bytes)  # Chiffrement
+        return jsonify({"encrypted_value": token.decode()})
+    except Exception as e:
+        return jsonify({"error": f"Erreur lors du chiffrement : {str(e)}"}), 400
+
+@app.route('/decrypt', methods=['POST'])
+def decrypt():
+
+    try:
+        data = request.get_json()
+        key = data['key']
+        encrypted_value = data['value']
+
+        # Vérifie que la clé est valide
+        f = Fernet(key)
+        encrypted_bytes = encrypted_value.encode()  # Conversion str -> bytes
+        decrypted_value = f.decrypt(encrypted_bytes)  # Décryptage
+        return jsonify({"decrypted_value": decrypted_value.decode()})
+    except Exception as e:
+        return jsonify({"error": f"Erreur lors du décryptage : {str(e)}"}), 400
+
+@app.route('/generate-key', methods=['GET'])
+def generate_key():
+    """
+    Génère une clé unique pour l'utilisateur.
+    """
+    key = Fernet.generate_key()
+    return jsonify({"key": key.decode()})
+
 if __name__ == "__main__":
-  app.run(debug=True)
+    app.run(debug=True)
